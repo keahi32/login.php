@@ -20,47 +20,47 @@ if ( !isset($_POST['email'], $_POST['password']) ) {
 // Prepare our SQL, preparing the SQL statement will prevent SQL injection.
 if ($stmt = $con->prepare('SELECT id, password FROM usuarios WHERE email = ?')) {
 	// Bind parameters (s = string, i = int, b = blob, etc), in our case the username is a string so we use "s"
-    $email=mysqli_real_escape_string($con,$_POST['email']);
-	$stmt->bind_param('s', $email);
+	$stmt->bind_param('s', $_POST['email']);
 	$stmt->execute();
 	// Store the result so we can check if the account exists in the database.
 	$stmt->store_result();
     if ($stmt->num_rows > 0) {
         $stmt->bind_result($id, $password);
         $stmt->fetch();
-        $jamon=mysqli_real_escape_string($con,$_POST['password']);
         // Account exists, now we verify the password.
         // Note: remember to use password_hash in your registration file to store the hashed passwords.
-        if($jamon == $password) {
+        
+        $email=mysqli_real_escape_string($con,$_POST['email']);
+        $jamon=mysqli_real_escape_string($con,$_POST['password']);
+        if (password_verify($jamon, $password)) {
             // Verification success! User has logged-in!
             // Create sessions, so we know the user is logged in, they basically act like cookies but remember the data on the server.
-
+            session_regenerate_id();
             $md5=md5($email);
             setcookie("name", $md5, time()+3600);
-            
             $sql = "INSERT INTO sesiones (sesion, email) VALUES ('$md5','$email')";
-    if (mysqli_query($con, $sql)) {
+            if (mysqli_query($con, $sql)){
 
-      } else {
-        echo "Error: " . $sql . "<br>" . mysqli_error($con);
-      }
-    
-    }
-            
-            echo 'Bienvenido ' . $email . '!';
+            }else{
+                echo "Error: " . $sql . "<br>" . mysqli_error($con);
+            }
+            $_SESSION['loggedin'] = TRUE;
+            $_SESSION['name'] = $_POST['email'];
+            $_SESSION['id'] = $id;
+            echo 'Bienvenido ' . $_SESSION['name'] . '!';
             echo '<br>';
-            echo '<a href="../administracion.php">Acceder a wordpress</a>';
+            echo '<a href="gestionusuarios/../administracion.php">Administrar la web</a>';
         } else {
             // Incorrect password
             echo 'Usuario o contraseña incorrecto!';
-            header( "Refresh:5; url=../index.php", true, 303);
+            
         }
     } else {
         // Incorrect username
         echo 'Usuario o contraseña incorrecto!';
-        header( "Refresh:5; url=../index.php", true, 303);
+        
     }
 
 	$stmt->close();
-
+}
 ?>
